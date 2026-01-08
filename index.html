@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Kantin Karyawan</title>
+    <title>Registrasi Canteen</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -13,7 +13,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg);
             display: flex;
             justify-content: center;
@@ -27,22 +27,24 @@
             padding: 30px;
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            width: 100%;
+            width: 90%;
             max-width: 400px;
             text-align: center;
         }
 
-        .logo {
-            font-size: 40px;
-            margin-bottom: 10px;
-        }
-
-        h2 { color: var(--primary); margin-bottom: 5px; }
-        p { color: #7f8c8d; margin-bottom: 25px; }
-
-        .input-box {
-            position: relative;
-            margin-bottom: 20px;
+        h2 { color: var(--primary); margin: 10px 0; }
+        
+        /* Dropdown Styling */
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            background-color: #fff;
+            cursor: pointer;
+            outline: none;
         }
 
         input {
@@ -54,34 +56,26 @@
             font-weight: bold;
             text-align: center;
             box-sizing: border-box;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
 
-        input:focus {
-            border-color: var(--success);
-            outline: none;
-            box-shadow: 0 0 10px rgba(39, 174, 96, 0.2);
-        }
+        input:focus { border-color: var(--success); outline: none; }
 
-        /* Kartu Data Karyawan */
         #resultCard {
             display: none;
             background: #f9f9f9;
             border-radius: 12px;
-            padding: 20px;
+            padding: 15px;
             margin-top: 20px;
             text-align: left;
             border-left: 6px solid var(--success);
-            animation: slideIn 0.4s ease-out;
+            animation: fadeIn 0.4s;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .label { font-size: 12px; color: #95a5a6; text-transform: uppercase; letter-spacing: 1px; }
-        .value { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 10px; }
+        .label { font-size: 11px; color: #95a5a6; text-transform: uppercase; }
+        .value { font-size: 18px; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
 
         .loading-spinner {
             display: none;
@@ -93,95 +87,92 @@
             height: 30px;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .status-msg { margin-top: 15px; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="logo">🍴</div>
-    <h2>Kantin Karyawan</h2>
-    <p>Silakan Scan atau Masukkan NRP</p>
+<audio id="beepSuccess" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
-    <div class="input-box">
-        <input type="text" id="nrpInput" placeholder="NRP" autofocus autocomplete="off">
-    </div>
+<div class="container">
+    <div style="font-size: 40px;">🍱</div>
+    <h2>Absensi Kantin</h2>
+    
+    <select id="kategoriMakan">
+        <option value="Makan Pagi">☀️ Makan Pagi</option>
+        <option value="Makan Siang" selected>🍴 Makan Siang</option>
+        <option value="Makan Malam">🌙 Makan Malam</option>
+    </select>
+
+    <input type="text" id="nrpInput" placeholder="Masukkan NRP" autofocus autocomplete="off">
 
     <div id="loader" class="loading-spinner"></div>
 
     <div id="resultCard">
-        <div class="label">Nama Karyawan</div>
+        <div class="label">Nama</div>
         <div id="resNama" class="value">-</div>
         <div class="label">Departemen</div>
         <div id="resDept" class="value">-</div>
-        <div style="color: var(--success); font-weight: bold; font-size: 14px;">✅ Absensi Tercatat</div>
+        <div style="color: var(--success); font-weight: bold;">✅ Berhasil Dicatat</div>
     </div>
 
-    <div id="errMsg" class="status-msg" style="color: var(--error);">NRP Tidak Ditemukan!</div>
+    <div id="errMsg" style="display:none; color: var(--error); margin-top: 15px; font-weight: bold;">
+        ❌ NRP Tidak Terdaftar!
+    </div>
 </div>
 
 <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyoqJH268cXKjcl7gH2gVZ1jYZBHeLE5PIfmcWCrJyr7BopQy3RFQC4_Zla1RVlTz6K/exec";
+    const PANJANG_NRP = 8; // Sesuaikan dengan jumlah digit NRP Anda (8215831 = 7 digit)
+
     const nrpInput = document.getElementById('nrpInput');
+    const kategoriSelect = document.getElementById('kategoriMakan');
     const resultCard = document.getElementById('resultCard');
-    const errMsg = document.getElementById('errMsg');
     const loader = document.getElementById('loader');
+    const beep = document.getElementById('beepSuccess');
 
-    // GANTI URL DI BAWAH INI DENGAN URL WEB APP ANDA
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwBqgc3ZPl-irnWoV_5atUDbBCk5MDyEHP7DljVn0c9thUbnar_iNnKRj1rNPmJWROi/exec";
-    const PANJANG_NRP = 8; // Ubah sesuai jumlah digit NRP perusahaan Anda
-
-    nrpInput.addEventListener('input', async () => {
-        const nrp = nrpInput.value;
-
-        if (nrp.length === PANJANG_NRP) {
-            fetchData(nrp);
+    nrpInput.addEventListener('input', () => {
+        if (nrpInput.value.length === PANJANG_NRP) {
+            submitAbsen(nrpInput.value);
         }
     });
 
-    async function fetchData(nrp) {
-        // Reset tampilan
-        hideElements();
+    async function submitAbsen(nrp) {
+        const kategori = kategoriSelect.value;
         loader.style.display = 'block';
         nrpInput.disabled = true;
+        resultCard.style.display = 'none';
+        document.getElementById('errMsg').style.display = 'none';
 
         try {
-            const response = await fetch(`${WEB_APP_URL}?nrp=${nrp}`);
+            const response = await fetch(`${WEB_APP_URL}?nrp=${nrp}&kategori=${kategori}`);
             const data = await response.json();
 
             loader.style.display = 'none';
 
             if (data && data.status === "success") {
-                // Tampilkan Data
+                beep.play(); // Bunyi Beep
                 document.getElementById('resNama').innerText = data.nama;
                 document.getElementById('resDept').innerText = data.dept;
                 resultCard.style.display = 'block';
-                
-                // Reset setelah 3 detik untuk orang berikutnya
-                setTimeout(fullReset, 3000);
+                setTimeout(resetForm, 3000);
             } else {
-                errMsg.style.display = 'block';
-                setTimeout(fullReset, 2000);
+                document.getElementById('errMsg').style.display = 'block';
+                setTimeout(resetForm, 2000);
             }
-        } catch (error) {
+        } catch (e) {
             loader.style.display = 'none';
-            alert("Terjadi masalah koneksi ke server!");
-            fullReset();
+            alert("Koneksi bermasalah!");
+            resetForm();
         }
     }
 
-    function hideElements() {
-        resultCard.style.display = 'none';
-        errMsg.style.display = 'none';
-    }
-
-    function fullReset() {
+    function resetForm() {
         nrpInput.disabled = false;
         nrpInput.value = '';
-        hideElements();
         nrpInput.focus();
+        resultCard.style.display = 'none';
+        document.getElementById('errMsg').style.display = 'none';
     }
 </script>
 
