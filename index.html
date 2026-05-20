@@ -324,16 +324,19 @@ async function submitBarcode(barcode){
 
         console.log(data);
 
-        if(data.status === "success"){
+       if(data.status === "success"){
 
-            showSuccess(data.nama, data.dept);
+    showSuccess(data.nama, data.dept);
 
-        }else{
-
-            showError();
-
-        }
-
+    }else if(data.status === "wrong_site"){
+    
+        showWarning();
+    
+    }else{
+    
+        showError();
+    
+    }
     }catch(error){
 
         console.log(error);
