@@ -333,8 +333,11 @@ async function submitBarcode(barcode){
             .getElementById("kategori")
             .value;
 
+        const site =
+    document.getElementById("site").value;
+
         const response = await fetch(
-            `${WEB_APP_URL}?nrp=${barcode}&kategori=${encodeURIComponent(kategori)}`
+            `${WEB_APP_URL}?nrp=${barcode}&site=${site}&kategori=${encodeURIComponent(kategori)}`
         );
 
         const data = await response.json();
